@@ -1,0 +1,55 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// 標量字段
+// 關係字段
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Post {
+  id       String    @id @default(uuid())
+  title    String
+  body     String
+  comments Comment[]
+}
+
+model User {
+  id       String    @id @default(uuid())
+  name     String
+  comments Comment[]
+  likes    Like[]
+}
+
+model Comment {
+  id        String    @id @default(uuid())
+  message   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  // onDelete 關係action 詳情查看官方文檔, Cascade代表,如果關聯的用戶被移除也將此Comment做移除的動作
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+  parent    Comment?  @relation("ParentChild", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId  String?
+  children  Comment[] @relation("ParentChild")
+  likes     Like[]
+}
+
+model Like {
+  // 用戶只能對一則評論喜歡一次不能重複喜歡, 且一個評論也不能被用戶喜歡很多次
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  commentId String
+
+  // 組合id類似super key符合唯一性的條件
+  @@id([userId, commentId])
+}
