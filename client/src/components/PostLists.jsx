@@ -1,5 +1,3 @@
-import { useCallback } from "react"
-import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { useAsync } from "../hooks/useAsync"
 import { getPosts } from "../sevices/posts"
@@ -9,7 +7,7 @@ export default function PostLists() {
   const { loading, error, value: posts } = useAsync(getPosts)
 
   if (loading) return <h1>Loading</h1>
-  if (error) return <h1>{error}</h1>
+  if (error) return <h1 className="error-msg">{error}</h1>
 
   return (
     posts.map(post => {

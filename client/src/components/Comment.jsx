@@ -8,9 +8,10 @@ export function Comment({ id, message, user, createdAt }) {
     const { getRepliesByParentId } = usePost()
     const childComments = getRepliesByParentId(id)
     const [areChildrenHidden, setAreChildrenHidden] = useState(false)
-    console.log({ childComments })
+    // console.log({ childComments })
     return (
         <>
+            {/* 第一次近來是根評論 */}
             <div className="comment">
                 <div className="header">
                     <span className="name">
@@ -32,6 +33,7 @@ export function Comment({ id, message, user, createdAt }) {
                     <IconBtn Icon={FaTrash} aria-label="刪除" color="danger" />
                 </div>
             </div>
+            {/* 子評論 */}
             {childComments?.length > 0 && (
                 <>
                     <div className={`nested-comments-stack ${areChildrenHidden ? "hide" : ""}`}>
@@ -42,15 +44,16 @@ export function Comment({ id, message, user, createdAt }) {
                             onClick={() => setAreChildrenHidden(true)}
                         />
                         <div className="nested-comments">
+                            {/* 類似遞迴直到childComments沒有資料 */}
                             <CommentList comments={childComments} />
                         </div>
                     </div>
                     <button
-                        className={`btn mt-1 ${areChildrenHidden ? "hide" : ""}`}
-                        aria-label="展開回覆"
+                        className={`btn mt-1 ${areChildrenHidden ? "" : "hide"}`}
+                        aria-label="顯示回覆"
                         onClick={() => setAreChildrenHidden(false)}
                     >
-                        展開回覆
+                        顯示回覆
                     </button>
                 </>
             )}
@@ -68,4 +71,3 @@ function dateFormatter(date) {
     // Date 的 parse() 方法用來將日期時間字串轉成一個數字
     // ，這數字表示從 1970-01-01 00:00:00 UTC (格林威治標準時間) 開始累計到現在的毫秒數 (milliseconds)。
 }
-
