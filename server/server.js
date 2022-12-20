@@ -12,7 +12,7 @@ const app = fastify()
 // 註冊sensible
 app.register(sensible)
 // 註冊cookie
-app.register(cookie, { secret: "132123132" })
+app.register(cookie, { secret: process.env.COOKIE_SECRET })
 // 跨域
 app.register(cors, {
     origin: process.env.CLIENT_URL,
@@ -22,15 +22,27 @@ app.register(cors, {
 // 若傳給 await 的值並非一個 Promise 物件，
 // 它會將該值轉換為 resolved Promise，並等待之
 
-const CURRENT_USER_ID = (await prisma.user.findFirst({ where: { name: "Kyle" } })).id
-console.log(CURRENT_USER_ID)
+const COMMENT_SELECT_FILEDS = {
+    id: true,
+    parentId: true,
+    message: true,
+    createdAt: true,
+    updatedAt: true,
+    user: {
+        select: {
+            id: true,
+            name: true,
+        }
+    }
+}
+const CURRENT_USER_ID = (await prisma.user.findFirst({ where: { name: "Sally" } })).id
 // addHook 可以注册钩子。你必须在事件被触发之前注册相应的钩子，否则，事件将得不到处理。 類似中間件
 // 偽造cookie假裝登入才能取得使用者資料, 正規需透過登錄系統取得資料
 app.addHook("onRequest", (req, res, done) => {
-    console.log(CURRENT_USER_ID)
+    console.log(req.cookies)
     if (req.cookies.userId !== CURRENT_USER_ID) {
+        // console.log(req.cookies.userId, CURRENT_USER_ID)
         req.cookies.userId = CURRENT_USER_ID
-        // 重置與清除cookie
         res.clearCookie("userId")
         res.setCookie("userId", CURRENT_USER_ID)
     }
@@ -60,19 +72,7 @@ app.get('/posts/:id', async (req, res) => {
                     orderBy: {
                         createdAt: "desc"
                     },
-                    select: {
-                        id: true,
-                        parentId: true,
-                        message: true,
-                        createdAt: true,
-                        updatedAt: true,
-                        user: {
-                            select: {
-                                id: true,
-                                name: true,
-                            }
-                        },
-                    },
+                    select: COMMENT_SELECT_FILEDS
                 }
             }
         })
@@ -93,11 +93,15 @@ app.post(`/posts/:id/comments`, async (req, res) => {
                 userId: req.cookies.userId,
                 parentId: req.body.parentId,
                 postId: req.params.id
-            }
+            },
+            select: COMMENT_SELECT_FILEDS
         })
     )
 })
 
+app.get("/", (req, res) => {
+    res.send("test cookie")
+})
 
 // 幫助處理error的資料
 async function commitToDb(promise) {
