@@ -8,6 +8,7 @@ export function CommentForm({ initialValue = "", loading, error, onSubmit, autoF
 
     function handleSubmit(e) {
         e.preventDefault()
+        // 善用了form的reuse, 傳入crud的function或額外...
         onSubmit(message).then(() => setMessage(""))
     }
 

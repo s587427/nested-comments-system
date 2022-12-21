@@ -35,7 +35,7 @@ const COMMENT_SELECT_FILEDS = {
         }
     }
 }
-const CURRENT_USER_ID = (await prisma.user.findFirst({ where: { name: "Sally" } })).id
+const CURRENT_USER_ID = (await prisma.user.findFirst({ where: { name: "Kyle" } })).id
 // addHook 可以注册钩子。你必须在事件被触发之前注册相应的钩子，否则，事件将得不到处理。 類似中間件
 // 偽造cookie假裝登入才能取得使用者資料, 正規需透過登錄系統取得資料
 app.addHook("onRequest", (req, res, done) => {
@@ -99,8 +99,45 @@ app.post(`/posts/:id/comments`, async (req, res) => {
     )
 })
 
-app.get("/", (req, res) => {
-    res.send("test cookie")
+
+app.put("/posts/:postId/comments/:commetId", async (req, res) => {
+    if (req.body.message === "" || req.body.message == null) {
+        return res.send(app.httpErrors.badRequest("留言必須不可為空"))
+    }
+    // 檢查評論的userId是否跟cookie一樣, 只能編輯自己的評論
+    const { userId } = await prisma.comment.findUnique({
+        where: { id: req.params.commetId },
+        select: { userId: true }
+    })
+
+    if (userId !== req.cookies.userId) {
+        return res.send(app.httpErrors.unauthorized("你沒有權限編輯這則評論"))
+    }
+
+    return await commitToDb(
+        prisma.comment.update({
+            where: { id: req.params.commetId },
+            data: { message: req.body.message },
+            select: { message: true }
+        })
+    )
+})
+
+app.delete("/posts/:postId/comments/:commetId", async (req, res) => {
+    const { userId } = await prisma.comment.findUnique({
+        where: { id: req.params.commetId },
+        select: { userId: true }
+    })
+    if (userId !== req.cookies.userId) {
+        return res.send(app.httpErrors.unauthorized("你沒有權限刪除這則評論"))
+    }
+
+    return await commitToDb(
+        prisma.comment.delete({
+            where: { id: req.params.commetId },
+            select: { id: true }
+        })
+    )
 })
 
 // 幫助處理error的資料

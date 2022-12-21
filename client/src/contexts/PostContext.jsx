@@ -17,10 +17,20 @@ export function PostProvider({ children }) {
     const rootComments = comments.filter(comment => !comment.parentId)
     const getRepliesByParentId = (parentId) => comments.filter(comment => comment.parentId === parentId)
     const createLocalComment = (comments) => setComments(preComments => [comments, ...preComments])
+    const updateLocalComment = (commentId, message) => setComments(preComments => {
+        return preComments.map(comments => {
+            if (comments.id === commentId) {
+                return { ...comments, message }
+            } else {
+                return comments
+            }
+        })
+    })
+    const deleteLoaclComment = (commentId) => setComments(preComments => preComments.filter(comment => comment.id !== commentId))
 
-    // ajax資料回來給本地comments
+    // fetch資料回來給本地一份comments
     useEffect(() => {
-        if(!post?.comments) return
+        if (!post?.comments) return
         setComments(post.comments)
     }, [post?.comments])
 
@@ -30,7 +40,9 @@ export function PostProvider({ children }) {
             post: { ...post, id },
             rootComments,
             getRepliesByParentId,
-            createLocalComment
+            createLocalComment,
+            updateLocalComment,
+            deleteLoaclComment
         }}>
         {loading
             ? <h1 className="error-msg">Loading</h1>

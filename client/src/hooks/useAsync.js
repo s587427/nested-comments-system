@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 
-// 直接調用非同步涵的方法, 返回state
+
+// func 接收一個promise func
+// 根據依賴直接執行promise的fun
+// 回傳all state
 export function useAsync(func, dependencies = []) {
     const { execute, ...state } = useAsyncInternal(func, dependencies, true)
     useEffect(() => {
@@ -9,7 +12,8 @@ export function useAsync(func, dependencies = []) {
     return state
 }
 
-// 返回可以包含所有state以及執行非同步涵的方法
+// func 接收一個promise func
+// retrun all state以及執行promise的func
 export function useAsyncFn(func, dependencies = []) {
     return useAsyncInternal(func, dependencies, false)
 }

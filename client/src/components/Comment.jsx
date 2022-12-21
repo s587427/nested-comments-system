@@ -1,13 +1,49 @@
 import { useState } from 'react'
 import { FaEdit, FaHeart, FaReply, FaTrash } from 'react-icons/fa'
 import { IconBtn } from './IconBtn'
-import { usePost } from '../contexts/PostContext'
 import { CommentList } from './CommentList'
+import { CommentForm } from './CommentForm'
+import { usePost } from '../contexts/PostContext'
+import { useAsyncFn } from '../hooks/useAsync'
+import { useUser } from '../hooks/useUser'
+import { createComment, deleteComment, updateComment } from '../sevices/comments'
 
 export function Comment({ id, message, user, createdAt }) {
-    const { getRepliesByParentId } = usePost()
-    const childComments = getRepliesByParentId(id)
+    const {
+        post,
+        getRepliesByParentId,
+        createLocalComment, updateLocalComment, deleteLoaclComment
+    } = usePost()
     const [areChildrenHidden, setAreChildrenHidden] = useState(false)
+    const [isReplying, setIsReplying] = useState(false)
+    const [isEditing, setIsEditing] = useState(false)
+    const childComments = getRepliesByParentId(id)
+
+    const createCommentFn = useAsyncFn(createComment)
+    const updateCommentFn = useAsyncFn(updateComment)
+    const deleteCommentFn = useAsyncFn(deleteComment)
+    const currentUser = useUser()
+
+    function onCommentReply(message) {
+        return createCommentFn.execute({ postId: post.id, message, parentId: id }).then(comment => {
+            setIsReplying(false)
+            createLocalComment(comment)
+        })
+    }
+
+    function onCommentUpdate(message) {
+        return updateCommentFn.execute({ postId: post.id, message, id }).then(comment => {
+            setIsEditing(false)
+            updateLocalComment(id, comment.message)
+        })
+    }
+
+    function onCommentDelete() {
+        return deleteCommentFn.execute({ postId: post.id, id }).then(comment => {
+            deleteLoaclComment(comment.id)
+        })
+    }
+
     // console.log({ childComments })
     return (
         <>
@@ -21,25 +57,71 @@ export function Comment({ id, message, user, createdAt }) {
                         {dateFormatter(createdAt)}
                     </span>
                 </div>
-                <div className="message">
-                    {message}
-                </div>
+
+                {isEditing
+                    ? <CommentForm
+                        autoFocus
+                        initialValue={message}
+                        onSubmit={onCommentUpdate}
+                        loading={updateCommentFn.loading}
+                        error={updateCommentFn.error}
+                    />
+                    : (<div className="message">{message}</div>)
+                }
+
                 <div className="footer">
                     <IconBtn Icon={FaHeart} aria-label="喜歡">
                         2
                     </IconBtn>
-                    <IconBtn Icon={FaReply} aria-label="回覆" />
-                    <IconBtn Icon={FaEdit} aria-label="編輯" />
-                    <IconBtn Icon={FaTrash} aria-label="刪除" color="danger" />
+                    <IconBtn
+                        Icon={FaReply}
+                        isActive={isReplying}
+                        onClick={() => setIsReplying(preValue => !preValue)}
+                        aria-label={isReplying ? "取消回覆" : "回覆"}
+                    />
+                    {user.id === currentUser.id && (
+                        <>
+                            <IconBtn
+                                Icon={FaEdit}
+                                isActive={isEditing}
+                                onClick={() => setIsEditing(preValue => !preValue)}
+                                aria-label={isEditing ? "取消編輯" : "編輯"}
+                            />
+                            <IconBtn
+                                Icon={FaTrash}
+                                color="danger"
+                                onClick={onCommentDelete}
+                                disabled={deleteCommentFn.loading}
+                                aria-label="刪除"
+                            />
+                        </>
+                    )}
                 </div>
+                {/* 刪除錯誤的訊息 */}
+                {deleteCommentFn.error && (
+                    <div className="error-msg mt-1">
+                        {deleteCommentFn.error}
+                    </div>)
+                }
             </div>
+            {/* 回覆區塊 */}
+            {isReplying && (
+                <div className="mt-1 ml-3">
+                    <CommentForm
+                        autoFocus
+                        loading={createCommentFn.loading}
+                        error={createCommentFn.error}
+                        onSubmit={onCommentReply}
+                    />
+                </div>
+            )}
             {/* 子評論 */}
             {childComments?.length > 0 && (
                 <>
                     <div className={`nested-comments-stack ${areChildrenHidden ? "hide" : ""}`}>
                         {/* 垂直線 */}
-                        <button 
-                            className="collapse-line" 
+                        <button
+                            className="collapse-line"
                             aria-label="隱藏回覆"
                             onClick={() => setAreChildrenHidden(true)}
                         />
