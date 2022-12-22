@@ -35,7 +35,7 @@ const COMMENT_SELECT_FILEDS = {
         }
     }
 }
-const CURRENT_USER_ID = (await prisma.user.findFirst({ where: { name: "Kyle" } })).id
+const CURRENT_USER_ID = (await prisma.user.findFirst({ where: { name: "Sally" } })).id
 // addHook 可以注册钩子。你必须在事件被触发之前注册相应的钩子，否则，事件将得不到处理。 類似中間件
 // 偽造cookie假裝登入才能取得使用者資料, 正規需透過登錄系統取得資料
 app.addHook("onRequest", (req, res, done) => {
@@ -72,9 +72,39 @@ app.get('/posts/:id', async (req, res) => {
                     orderBy: {
                         createdAt: "desc"
                     },
-                    select: COMMENT_SELECT_FILEDS
+                    select: {
+                        ...COMMENT_SELECT_FILEDS,
+                        _count: {
+                            select: {
+                                likes: true
+                            }
+                        }
+                    }
                 }
             }
+        }).then(async post => {
+            // 得到當前登入用戶喜歡的所有評論
+            const likes = await prisma.like.findMany({
+                where: {
+                    userId: req.cookies.userId,
+                    commentId: { in: post.comments.map(comment => comment.id) }
+                }
+            })
+
+            // 加工評論與登入者是否喜歡這則評論
+            const processComments = post.comments.map(comment => {
+                return {
+                    ...comment,
+                    likedByMe: likes.filter(like => like.commentId === comment.id).length > 0,
+                    likedCount: comment._count.likes
+                }
+            })
+
+            return {
+                ...post,
+                comments: processComments
+            }
+
         })
     )
 })
@@ -96,7 +126,14 @@ app.post(`/posts/:id/comments`, async (req, res) => {
             },
             select: COMMENT_SELECT_FILEDS
         })
-    )
+    ).then(comment => {
+        // 預設喜歡與喜歡總數為0
+        return {
+            ...comment,
+            likedByMe: false,
+            likedCount: 0
+        }
+    })
 })
 
 
@@ -138,6 +175,36 @@ app.delete("/posts/:postId/comments/:commetId", async (req, res) => {
             select: { id: true }
         })
     )
+})
+
+app.post("/posts/:postId/comments/:commetId/toggleLike", async (req, res) => {
+
+    const data = {
+        userId: req.cookies.userId,
+        commentId: req.params.commetId
+    }
+
+    const like = await prisma.like.findUnique({
+        // 因為是複合鍵所以where寫成這樣
+        where: {
+            userId_commentId: data
+        }
+    })
+
+    if (like == null) {
+        return await commitToDb(
+            prisma.like.create({
+                data: data
+            })
+            .then(() => ({ isLike: true }))
+        )
+    } else {
+        return await commitToDb(
+            prisma.like.delete({
+                where: { userId_commentId: data }
+            }).then(() => ({ isLike: false }))
+        )
+    }
 })
 
 // 幫助處理error的資料

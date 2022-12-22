@@ -1,4 +1,15 @@
-# 開發步驟
+# 嵌套系統練習
+
+## 使用技術
+
+### node.js 後端 (fastify)
+
+
+### vite 腳手架 + react.js
+### prisma orm node.js與數據庫(本專案使用postgresql)的操作
+
+
+## 開發步驟
 1. 建立model
 2. model migrate to database
 3. prisma/seed.js

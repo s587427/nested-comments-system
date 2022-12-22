@@ -1,18 +1,18 @@
 import { useState } from 'react'
-import { FaEdit, FaHeart, FaReply, FaTrash } from 'react-icons/fa'
+import { FaEdit, FaHeart, FaRegHeart, FaReply, FaTrash } from 'react-icons/fa'
 import { IconBtn } from './IconBtn'
 import { CommentList } from './CommentList'
 import { CommentForm } from './CommentForm'
 import { usePost } from '../contexts/PostContext'
 import { useAsyncFn } from '../hooks/useAsync'
 import { useUser } from '../hooks/useUser'
-import { createComment, deleteComment, updateComment } from '../sevices/comments'
+import { createComment, deleteComment, updateComment, toggleLikeComment } from '../sevices/comments'
 
-export function Comment({ id, message, user, createdAt }) {
+export function Comment({ id, message, user, createdAt, likedByMe, likedCount }) {
     const {
         post,
         getRepliesByParentId,
-        createLocalComment, updateLocalComment, deleteLoaclComment
+        createLocalComment, updateLocalComment, deleteLocalComment, ToggleLikeLocalComment
     } = usePost()
     const [areChildrenHidden, setAreChildrenHidden] = useState(false)
     const [isReplying, setIsReplying] = useState(false)
@@ -22,6 +22,7 @@ export function Comment({ id, message, user, createdAt }) {
     const createCommentFn = useAsyncFn(createComment)
     const updateCommentFn = useAsyncFn(updateComment)
     const deleteCommentFn = useAsyncFn(deleteComment)
+    const toggleLikeCommentFn = useAsyncFn(toggleLikeComment)
     const currentUser = useUser()
 
     function onCommentReply(message) {
@@ -40,7 +41,13 @@ export function Comment({ id, message, user, createdAt }) {
 
     function onCommentDelete() {
         return deleteCommentFn.execute({ postId: post.id, id }).then(comment => {
-            deleteLoaclComment(comment.id)
+            deleteLocalComment(comment.id)
+        })
+    }
+
+    function onCommentToggleLike() {
+        return toggleLikeCommentFn.execute({ postId: post.id, id }).then(comment => {
+            ToggleLikeLocalComment(id, comment.isLike)
         })
     }
 
@@ -70,8 +77,15 @@ export function Comment({ id, message, user, createdAt }) {
                 }
 
                 <div className="footer">
-                    <IconBtn Icon={FaHeart} aria-label="喜歡">
-                        2
+                    <IconBtn
+                        disabled={toggleLikeCommentFn.loading}
+                        Icon={likedByMe ? FaHeart : FaRegHeart}
+                        aria-label={likedByMe ? "喜歡" : "不喜歡"}
+                        onClick={onCommentToggleLike}
+                    >
+                        <span>
+                            {likedCount}
+                        </span>
                     </IconBtn>
                     <IconBtn
                         Icon={FaReply}

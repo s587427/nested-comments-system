@@ -16,6 +16,12 @@ export function updateComment({ postId, message, id }) {
 
 export function deleteComment({ postId, id }) {
     return makeRequest(`posts/${postId}/comments/${id}`, {
-        method: "delete",
+        method: "delete"
+    })
+}
+
+export function toggleLikeComment({ postId, id }) {
+    return makeRequest(`posts/${postId}/comments/${id}/toggleLike`, {
+        method: "post"
     })
 }

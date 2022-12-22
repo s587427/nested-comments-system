@@ -26,7 +26,22 @@ export function PostProvider({ children }) {
             }
         })
     })
-    const deleteLoaclComment = (commentId) => setComments(preComments => preComments.filter(comment => comment.id !== commentId))
+    const deleteLocalComment = (commentId) => setComments(preComments => preComments.filter(comment => comment.id !== commentId))
+    const ToggleLikeLocalComment = (commentId, isLike) => {
+        return setComments(preComments => {
+            return preComments.map(comment => {
+                if (comment.id === commentId) {
+                    return {
+                        ...comment,
+                        likedByMe: isLike,
+                        likedCount: isLike ? comment.likedCount + 1 : comment.likedCount - 1
+                    }
+                } else {
+                    return comment
+                }
+            })
+        })
+    }
 
     // fetch資料回來給本地一份comments
     useEffect(() => {
@@ -34,7 +49,7 @@ export function PostProvider({ children }) {
         setComments(post.comments)
     }, [post?.comments])
 
-
+    
     return <Context.Provider
         value={{
             post: { ...post, id },
@@ -42,7 +57,8 @@ export function PostProvider({ children }) {
             getRepliesByParentId,
             createLocalComment,
             updateLocalComment,
-            deleteLoaclComment
+            deleteLocalComment,
+            ToggleLikeLocalComment
         }}>
         {loading
             ? <h1 className="error-msg">Loading</h1>

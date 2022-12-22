@@ -13,18 +13,18 @@ export function Post() {
             createLocalComment(comment)
         })
     }
-    console.log({ post, rootComments })
+    // console.log({ post, rootComments })
     return <>
         <h1>{post.title}</h1>
         <article>{post.body}</article>
         <h3 className="comments-title">留言</h3>
         <section>
-            {rootComments && rootComments.length > 0 && (
-                <div className="mt-4">
-                    <CommentForm loading={loading} error={error} onSubmit={onCommentCreate} />
-                    <CommentList comments={rootComments} />
-                </div>
-            )}
+
+            <div className="mt-4">
+                <CommentForm loading={loading} error={error} onSubmit={onCommentCreate} />
+                <CommentList comments={rootComments} />
+            </div>
+
         </section>
     </>
 }
